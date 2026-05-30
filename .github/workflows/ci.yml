@@ -1,4 +1,3 @@
-
 name: Complete CI/CD Pipeline
 
 on:
@@ -9,25 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Job 1: Lint (code quality)
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
-      - name: Install dependencies
-        run: npm install
-      - name: Run a simple lint check (no extra tool)
+      - run: npm install
+      - name: Simple lint check
         run: |
-          echo "Checking if index.js has valid syntax..."
           node --check index.js
           echo "✅ Lint passed"
 
-  # Job 2: Test with matrix (multiple Node versions)
   test:
     needs: lint
     runs-on: ubuntu-latest
@@ -40,9 +33,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
-      - run: npm test
+      - run: npm test   # ← Yeh ab pass karega (exit 0)
 
-  # Job 3: Build (create artifact)
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -57,26 +49,21 @@ jobs:
           mkdir -p build
           cp index.js build/
           cp package.json build/
-          echo "Build completed on $(date)" > build/build-info.txt
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+          echo "Build done" > build/info.txt
+      - uses: actions/upload-artifact@v4
         with:
           name: my-app-build
           path: build/
 
-  # Job 4: Deploy (only on main branch)
   deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: my-app-build
           path: ./deploy-ready
-      - name: Simulate deployment
-        run: |
-          echo "🚀 Deploying to server..."
+      - run: |
+          echo "Deploying..."
           ls -la ./deploy-ready
-          echo "Deployment complete!"
